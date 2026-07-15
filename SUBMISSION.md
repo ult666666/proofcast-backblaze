@@ -83,7 +83,7 @@ Provenance is most useful when it is part of the media pipeline from the beginni
 ## Links
 
 - Working app: `[PUBLIC_APP_URL]`
-- Repository: `[GITHUB_REPOSITORY_URL]`
+- Repository: https://github.com/ult666666/proofcast-backblaze
 - Demo video: `[PUBLIC_VIDEO_URL]`
 - Sample audio: `[PUBLIC_B2_AUDIO_URL]`
 - Sample cover: `[PUBLIC_B2_COVER_URL]`
@@ -123,4 +123,3 @@ Show the repository's provider, storage, explicit cloud gate, tests, Dockerfile,
 - `[ ]` Video is publicly visible and under three minutes.
 - `[ ]` No trademark, copyrighted music, secret, or private text appears.
 - `[ ]` Every bracketed placeholder has been replaced or removed.
-
