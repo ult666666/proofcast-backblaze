@@ -1,5 +1,5 @@
 genblaze-core==0.3.4
 genblaze-s3==0.3.4
-Pillow==12.0.0
+Pillow==12.3.0
 streamlit==1.51.0
 
