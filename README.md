@@ -54,6 +54,74 @@ Start the app:
 
 No account, card, provider credit, or network call is needed for local generation.
 
+## Verify a saved local bundle
+
+`--verify` independently rereads the saved manifest and media. It checks the canonical hash,
+the completed two-step ProofCast contract, each file's SHA-256 and byte count, and actual
+single-frame PNG dimensions and decoded pixels / PCM WAV metadata. Generation now runs these same checks before reporting
+`verified: true`; Genblaze's manifest-only check does not reread media bytes.
+
+```bash
+.venv/bin/python -m proofcast.cli --verify output/YOUR-RUN-ID-manifest.json
+# If the manifest and media are stored separately:
+.venv/bin/python -m proofcast.cli --verify saved-manifest.json --asset-dir output
+```
+
+Exit **0** means the manifest and both local files passed; **1** means verification failed;
+**2** means invalid CLI arguments. JSON includes separate `manifest_verified` and
+`assets_verified` results and explicit issues such as `digest_mismatch`, `missing_file`,
+`size_mismatch` or `media_metadata_mismatch`. Reports contain no prompt or recorded URL.
+
+Inspection never generates media, loads B2 settings or fetches a URL. It reads only the two
+step-ID filenames in the manifest directory (or `--asset-dir`), so a complete bundle can be
+moved together without following the original absolute file URLs. Linked/nonregular files,
+manifests over 1 MiB and media files over 32 MiB are refused. The verifier accepts the schema
+1.5 manifests emitted by this pinned Genblaze version.
+
+Try a complete local generation → clean verification → tamper detection, leaving the original
+files intact:
+
+```bash
+mkdir -p output
+.venv/bin/python -m proofcast.cli \
+  --title "Check before clicking" \
+  --script "Verify unexpected requests through a second channel." > output/latest-run.json
+
+.venv/bin/python - <<'PYDEMO'
+import json
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+run = json.loads(Path("output/latest-run.json").read_text())
+manifest = Path(run["manifest_path"])
+subprocess.run([sys.executable, "-m", "proofcast.cli", "--verify", str(manifest)], check=True)
+with tempfile.TemporaryDirectory(prefix="proofcast-tamper-") as temporary:
+    folder = Path(temporary).resolve()
+    shutil.copyfile(manifest, folder / manifest.name)
+    for asset in run["verification"]["assets"]:
+        name = asset["filename"]
+        shutil.copyfile(manifest.parent / name, folder / name)
+    cover = next(folder.glob("*-cover.png"))
+    cover.write_bytes(cover.read_bytes() + b"changed after generation")
+    result = subprocess.run(
+        [sys.executable, "-m", "proofcast.cli", "--verify", str(folder / manifest.name)],
+        capture_output=True, text=True, check=False,
+    )
+    report = json.loads(result.stdout)
+    assert result.returncode == 1 and report["manifest_verified"] is True
+    assert "digest_mismatch" in report["assets"][1]["issues"]
+    print("Tampered copy rejected; original media preserved.")
+PYDEMO
+```
+
+A passing report establishes **local consistency**, not authorship or proof that the stated
+prompt produced the media. Hashes are not signatures. `remote_assets_checked` is always
+`false`: even when a manifest records B2 HTTPS URLs, verification checks the retained local
+files and makes no claim about an upload or the bytes served remotely.
+
 ## Backblaze B2 mode
 
 Do not put real credentials in the repository. Copy `.env.example` into a secure local secret store or configure the same values in the deployment platform.
