@@ -58,7 +58,7 @@ No account, card, provider credit, or network call is needed for local generatio
 
 `--verify` independently rereads the saved manifest and media. It checks the canonical hash,
 the completed two-step ProofCast contract, each file's SHA-256 and byte count, and actual
-PNG dimensions / PCM WAV metadata. Generation now runs these same checks before reporting
+single-frame PNG dimensions and decoded pixels / PCM WAV metadata. Generation now runs these same checks before reporting
 `verified: true`; Genblaze's manifest-only check does not reread media bytes.
 
 ```bash

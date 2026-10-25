@@ -293,7 +293,13 @@ def _media_issues(data: bytes, asset: Asset, role: str) -> list[str]:
                     asset.height,
                 ):
                     return ["media_metadata_mismatch"]
+                if image.n_frames != 1:
+                    return ["invalid_media"]
                 image.verify()
+            # CRC verification alone does not decompress IDAT. Decode the one
+            # supported cover frame only after the fixed dimensions are checked.
+            with Image.open(BytesIO(data)) as decoded:
+                decoded.load()
         else:
             with wave.open(BytesIO(data), "rb") as audio:
                 metadata = asset.audio

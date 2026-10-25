@@ -40,7 +40,7 @@ exit 1 with `digest_mismatch`; a missing file must exit 1 with `missing_file`. T
 copy-and-tamper scenario in [README.md](README.md#verify-a-saved-local-bundle) preserves the originals.
 
 Checks cover canonical integrity, the ProofCast two-step contract, file SHA-256/size and real
-PNG/WAV metadata. Passing is internal consistency, not authenticated provenance or remote
+PNG/WAV metadata, including full decoding of the supported single-frame PNG cover. Passing is internal consistency, not authenticated provenance or remote
 upload verification. Files must be unlinked regular files, at most 1 MiB for the manifest and
 32 MiB for each asset. Moved files are selected only in the manifest directory or an explicit
 `--asset-dir`; recorded absolute locations and HTTPS URLs are never followed.

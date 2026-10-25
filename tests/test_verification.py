@@ -247,3 +247,65 @@ def test_rehashed_provider_model_inconsistency_is_rejected(
     assert report.manifest_verified
     assert not report.verified
     assert "bundle_contract_mismatch" in report.issues
+
+
+def test_crc_valid_png_with_broken_compressed_pixels_is_rejected(local_bundle):
+    import struct
+    import zlib
+
+    def chunk(kind, data):
+        return (
+            struct.pack(">I", len(data))
+            + kind
+            + data
+            + struct.pack(">I", zlib.crc32(kind + data))
+        )
+
+    # The PNG container and all CRCs are valid, but these IDAT bytes cannot decode.
+    data = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 1280, 720, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", b"broken zlib stream")
+        + chunk(b"IEND", b"")
+    )
+    cover = media(local_bundle, "-cover.png")
+    cover.write_bytes(data)
+    rewrite(
+        local_bundle,
+        lambda d: d["run"]["steps"][1]["assets"][0].update(
+            sha256=hashlib.sha256(data).hexdigest(),
+            size_bytes=len(data),
+        ),
+        rehash=True,
+    )
+    report = inspect(local_bundle.manifest_path)
+    assert report.manifest_verified
+    assert not report.verified
+    assert "invalid_media" in report.assets[1].issues
+
+
+def test_animated_png_cannot_hide_unchecked_additional_frames(local_bundle):
+    from io import BytesIO
+    from PIL import Image
+
+    buffer = BytesIO()
+    Image.new("RGB", (1280, 720), "white").save(
+        buffer,
+        format="PNG",
+        save_all=True,
+        append_images=[Image.new("RGB", (1280, 720), "black")],
+        duration=50,
+    )
+    data = buffer.getvalue()
+    media(local_bundle, "-cover.png").write_bytes(data)
+    rewrite(
+        local_bundle,
+        lambda d: d["run"]["steps"][1]["assets"][0].update(
+            sha256=hashlib.sha256(data).hexdigest(),
+            size_bytes=len(data),
+        ),
+        rehash=True,
+    )
+    report = inspect(local_bundle.manifest_path)
+    assert not report.verified
+    assert "invalid_media" in report.assets[1].issues
