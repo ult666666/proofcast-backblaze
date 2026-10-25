@@ -34,3 +34,39 @@ def test_end_to_end_local_bundle(tmp_path: Path, monkeypatch) -> None:
     assert result.manifest_path.exists()
     assert {asset.media_type for asset in result.assets} == {"audio/wav", "image/png"}
     assert all(local_path_from_asset(asset).exists() for asset in result.assets)
+
+
+def test_generation_exposes_manifest_and_local_byte_results(local_bundle):
+    from proofcast.pipeline import result_as_dict
+
+    report = result_as_dict(local_bundle)
+    assert report["verified"] is True
+    assert report["verification"]["manifest_verified"] is True
+    assert report["verification"]["assets_verified"] is True
+    assert report["verification"]["remote_assets_checked"] is False
+    assert len(report["verification"]["assets"]) == 2
+
+
+def test_generation_does_not_claim_verified_for_wrong_media_dimensions(
+    tmp_path, monkeypatch
+):
+    from PIL import Image
+    from proofcast.providers import AccessibleCoverProvider
+
+    monkeypatch.setattr(
+        LocalSpeechProvider,
+        "_generate_with_say",
+        lambda self, script, path: _write_test_wave(path),
+    )
+    monkeypatch.setattr(
+        AccessibleCoverProvider,
+        "_render",
+        lambda self, title, prompt: Image.new("RGB", (640, 720)),
+    )
+    result = generate_bundle(
+        GenerationRequest(
+            title="Wrong dimensions", script="Check the source.", engine="say"
+        ),
+        Settings(output_dir=tmp_path),
+    )
+    assert result.verified is False

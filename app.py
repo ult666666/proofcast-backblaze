@@ -13,7 +13,9 @@ from proofcast.pipeline import GenerationRequest, generate_bundle, local_path_fr
 st.set_page_config(page_title="ProofCast", page_icon="◉", layout="wide")
 
 st.title("ProofCast")
-st.caption("Turn a short lesson into local AI narration with verifiable media provenance.")
+st.caption(
+    "Turn a short lesson into local AI narration with verifiable media provenance."
+)
 
 settings = Settings.from_env()
 try:
@@ -22,11 +24,17 @@ except ValueError as exc:
     st.error(f"Configuration error: {exc}")
     st.stop()
 
-storage_label = "Backblaze B2 enabled" if settings.b2_enabled else "Local demo mode — no cloud writes"
+storage_label = (
+    "Backblaze B2 enabled"
+    if settings.b2_enabled
+    else "Local demo mode — no cloud writes"
+)
 st.info(storage_label)
 
 with st.form("generation"):
-    title = st.text_input("Brief title", value="Three ways to spot a phishing message", max_chars=90)
+    title = st.text_input(
+        "Brief title", value="Three ways to spot a phishing message", max_chars=90
+    )
     script = st.text_area(
         "Narration script",
         value=(
@@ -51,7 +59,9 @@ if submitted:
         st.warning("Confirm the non-sensitive content notice before generating.")
         st.stop()
     try:
-        with st.spinner("Generating two local media assets and verifying the manifest..."):
+        with st.spinner(
+            "Generating two local media assets and checking the manifest and local media bytes..."
+        ):
             generated = generate_bundle(
                 GenerationRequest(title=title, script=script, voice=voice, rate=rate),
                 settings,
@@ -60,7 +70,15 @@ if submitted:
         st.error(f"Generation failed: {exc}")
         st.stop()
 
-    st.success(f"Verified provenance: {generated.verified}")
+    if generated.verified:
+        st.success("Manifest integrity and both local media files verified.")
+    else:
+        st.error(
+            "Local bundle verification failed. Inspect the verification report before using it."
+        )
+    st.caption(generated.verification.to_dict()["scope"])
+    with st.expander("Local verification report"):
+        st.json(generated.verification.to_dict())
     st.code(generated.canonical_hash, language=None)
     media_columns = st.columns(2)
     for asset in generated.assets:
@@ -95,4 +113,3 @@ st.caption(
     "Zero-provider-cost design: Apple Speech or eSpeak NG runs locally; cloud writes stay off unless "
     "B2_ENABLED=1 is explicitly configured. Script length is capped to control storage and runtime."
 )
-

@@ -226,3 +226,24 @@ def test_rehashed_non_media_bytes_are_rejected(local_bundle):
     report = inspect(local_bundle.manifest_path)
     assert not report.verified
     assert "invalid_media" in report.assets[1].issues
+
+
+@pytest.mark.parametrize(
+    ("index", "field", "value"),
+    [
+        (0, "model", "unrelated-speech-model"),
+        (1, "model", "unrelated-image-model"),
+    ],
+)
+def test_rehashed_provider_model_inconsistency_is_rejected(
+    local_bundle, index, field, value
+):
+    rewrite(
+        local_bundle,
+        lambda d: d["run"]["steps"][index].update({field: value}),
+        rehash=True,
+    )
+    report = inspect(local_bundle.manifest_path)
+    assert report.manifest_verified
+    assert not report.verified
+    assert "bundle_contract_mismatch" in report.issues

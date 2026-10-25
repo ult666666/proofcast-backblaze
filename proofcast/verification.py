@@ -261,6 +261,23 @@ def _contract_ok(manifest: Manifest) -> bool:
             or not _transport_allowed(asset.url, step.step_id + suffix)
         ):
             return False
+        if role == "image":
+            if (
+                step.model != "proofcast-accessible-cover-v1"
+                or asset.metadata.get("generator") != step.model
+            ):
+                return False
+        else:
+            engine = asset.metadata.get("local_engine")
+            voice = asset.metadata.get("voice")
+            if engine == "say" and isinstance(voice, str):
+                expected_model = "apple-speech-" + voice.lower().replace(" ", "-")
+            elif engine == "espeak-ng" and voice == "en-us":
+                expected_model = "espeak-ng-en-us"
+            else:
+                return False
+            if step.model != expected_model:
+                return False
         ids.extend((step.step_id, asset.asset_id))
     return len(set(ids)) == 4 and run.steps[0].prompt == run.steps[1].prompt
 
