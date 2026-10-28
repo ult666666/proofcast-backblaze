@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 output/
 
+
+# Local agent planning notes (not part of the project docs)
+docs/superpowers/

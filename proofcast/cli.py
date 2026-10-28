@@ -67,22 +67,26 @@ def main() -> int:
         parser.error("--asset-dir requires --verify")
     if args.title is None or args.script is None:
         parser.error("generation requires both --title and --script")
-    settings = Settings.from_env()
-    if settings.b2_enabled and not args.allow_b2:
-        settings = Settings(
-            output_dir=settings.output_dir,
-            max_script_chars=settings.max_script_chars,
+    try:
+        settings = Settings.from_env()
+        if settings.b2_enabled and not args.allow_b2:
+            settings = Settings(
+                output_dir=settings.output_dir,
+                max_script_chars=settings.max_script_chars,
+            )
+        result = generate_bundle(
+            GenerationRequest(
+                title=args.title,
+                script=args.script,
+                voice=args.voice if args.voice is not None else "Samantha",
+                rate=args.rate if args.rate is not None else 175,
+                engine=args.engine if args.engine is not None else "auto",
+            ),
+            settings,
         )
-    result = generate_bundle(
-        GenerationRequest(
-            title=args.title,
-            script=args.script,
-            voice=args.voice if args.voice is not None else "Samantha",
-            rate=args.rate if args.rate is not None else 175,
-            engine=args.engine if args.engine is not None else "auto",
-        ),
-        settings,
-    )
+    except (RuntimeError, ValueError) as error:
+        # Invalid input or a missing speech engine: one line, not a traceback.
+        parser.exit(2, f"{parser.prog}: error: {error}\n")
     print(result_as_json(result))
     return 0 if result.verified else 1
 

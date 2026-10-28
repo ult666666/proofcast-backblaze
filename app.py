@@ -96,7 +96,7 @@ if submitted:
         elif asset.media_type.startswith("image/"):
             with media_columns[1]:
                 st.subheader("Accessible cover")
-                st.image(source, use_container_width=True)
+                st.image(source, width="stretch")
                 st.caption(asset.url)
 
     with st.expander("Providers, models, and manifest"):
