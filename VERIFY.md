@@ -66,7 +66,7 @@ Review every match manually. `.env.example` must contain placeholders only.
 
 ## Live B2 smoke test
 
-Run only after following `ACCOUNT_BOUND_STEPS.md` and confirming no payment method is required.
+Run only after following the account and bucket setup in [docs/history/ACCOUNT_BOUND_STEPS.md](docs/history/ACCOUNT_BOUND_STEPS.md) and confirming no payment method is required.
 
 ```bash
 .venv/bin/python -m proofcast.cli \

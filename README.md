@@ -1,5 +1,7 @@
 # ProofCast
 
+[![Verify](https://github.com/ult666666/proofcast-backblaze/actions/workflows/verify.yml/badge.svg)](https://github.com/ult666666/proofcast-backblaze/actions/workflows/verify.yml)
+
 ProofCast turns a short lesson or safety briefing into two generated media assets:
 
 - a local text-to-speech WAV narration;
@@ -7,7 +9,7 @@ ProofCast turns a short lesson or safety briefing into two generated media asset
 
 Genblaze orchestrates both steps, records the provider/model/prompt/parameters, hashes every asset, and creates a verifiable canonical manifest. When deliberately enabled, a content-addressable Genblaze sink stores the media and manifest in Backblaze B2. The default mode is local-only and makes no cloud writes.
 
-This is a submission scaffold for the official [Backblaze Generative Media Hackathon](https://backblaze-generative-media.devpost.com/). It is not yet submitted or deployed.
+ProofCast was built for the [Backblaze Generative Media Hackathon](https://backblaze-generative-media.devpost.com/). Local generation and verification are tested in CI. The optional Backblaze B2 upload is implemented but has not been run against a real bucket.
 
 ## Why it is useful
 
@@ -31,7 +33,7 @@ The app caps scripts at 1,200 characters, disables provider retries, allows only
 | Narration on Linux/deployment | `proofcast-local-speech` | `espeak-ng-en-us` | $0 |
 | Cover generation | `proofcast-accessible-cover` | `proofcast-accessible-cover-v1` | $0 |
 
-The public demo should use eSpeak NG so it runs on a normal Linux host without a generation-provider account. The application can later swap in any Genblaze speech or image connector without changing the B2/provenance layer.
+On Linux, ProofCast uses eSpeak NG, so it needs no generation-provider account. Any Genblaze speech or image connector could replace these providers without changing the B2 and provenance layer.
 
 ## Local quick start
 
@@ -52,7 +54,7 @@ Start the app:
 .venv/bin/streamlit run app.py
 ```
 
-No account, card, provider credit, or network call is needed for local generation.
+No account, card, provider credit, or network call is needed for local generation. If the input is invalid or no speech engine is installed, the CLI prints a one-line error and exits 2.
 
 ## Verify a saved local bundle
 
@@ -149,31 +151,15 @@ The Streamlit app uses B2 when `B2_ENABLED=1`; deployment secrets must never be 
 - `KeyStrategy.CONTENT_ADDRESSABLE` deduplicates identical media.
 - `auto_lifecycle=False` avoids changing bucket-wide policy behind the user's back.
 - `preflight=True` fails before generation if the key, region, or bucket is wrong.
-- A public URL base gives judges credential-free asset access.
+- A public URL base lets anyone open the demo assets without credentials.
 - A bucket-scoped key limits the blast radius.
 - Cloud mode requires all five B2 values and an explicit `B2_ENABLED=1` gate.
 
-Backblaze documents that the first 10 GB of B2 storage is free. Keep the demo far below that amount, check the B2 usage screen before and after testing, and stop if signup or deployment asks for a payment method. The code itself cannot guarantee that an external service will never change its signup or billing policy.
+Backblaze documents that the first 10 GB of B2 storage is free. Keep the demo far below that amount, check the B2 usage screen before and after testing, and stop if signup or deployment asks for a payment method.
 
-## Verification performed
+## Verification
 
-As of July 14, 2026:
-
-- seven automated tests pass on macOS and Linux without contacting a provider;
-- the full local pipeline generated a WAV, PNG, and canonical manifest;
-- `manifest.verify()` returned `True`;
-- both media steps recorded `cost_usd = 0.0` and `network_calls = 0`;
-- no Backblaze account was created;
-- no B2 upload, deployment, Devpost submission, or paid API call was made.
-
-The B2 path is implemented but intentionally untested against a live account. Follow [ACCOUNT_BOUND_STEPS.md](ACCOUNT_BOUND_STEPS.md) only after the account owner approves the current Backblaze signup/billing screen.
-
-## Submission materials
-
-- [Official rules and entry strategy](RULES_AND_ENTRY_PLAN.md)
-- [Account-bound remaining steps](ACCOUNT_BOUND_STEPS.md)
-- [Devpost-ready copy and demo script](SUBMISSION.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
+CI runs the test suite and compiles the source on pull requests and pushes to `main` ([workflow](.github/workflows/verify.yml)). The suite exercises local generation, saved-bundle integrity, real-file tampering, media metadata, malformed input and CLI isolation without contacting a provider or Backblaze. Tests replace the operating system's speech call with a small WAV writer. [VERIFY.md](VERIFY.md) lists the manual checks, including a one-run live B2 smoke test.
 
 ## Security and privacy
 
@@ -182,7 +168,12 @@ The B2 path is implemented but intentionally untested against a live account. Fo
 - Use a bucket-scoped application key with only the capabilities needed for upload/read/list.
 - Rotate the key immediately if it appears in logs or screenshots.
 - Do not commit `.env`, deployment secrets, generated assets, or user text.
+- Docker builds skip `.env` files, virtual environments, caches and `output/` (see `.dockerignore`), so local keys and media stay out of the image.
+
+## Project history
+
+The rules summary, account checklist and submission draft written for the hackathon are kept in [`docs/history/`](docs/history/).
 
 ## License
 
-Project code is MIT licensed. Third-party dependencies remain under their own licenses.
+Project code is MIT licensed. Third-party dependencies remain under their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

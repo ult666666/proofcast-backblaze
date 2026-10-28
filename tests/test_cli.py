@@ -82,3 +82,33 @@ def test_generation_requires_both_original_text_inputs():
         result = run_cli(*flags)
         assert result.returncode == 2
         assert not result.stdout
+
+
+def test_invalid_generation_input_exits_2_without_traceback(tmp_path):
+    result = run_cli(
+        "--title",
+        "A lesson",
+        "--script",
+        "x" * 1201,
+        PROOFCAST_MAX_SCRIPT_CHARS="1200",
+        PROOFCAST_OUTPUT_DIR=str(tmp_path / "output"),
+    )
+    assert result.returncode == 2
+    assert not result.stdout
+    assert "Script must be 1200 characters or fewer" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+def test_missing_speech_engine_exits_2_without_traceback(tmp_path):
+    result = run_cli(
+        "--title",
+        "A lesson",
+        "--script",
+        "Safe text.",
+        PATH=str(tmp_path),
+        PROOFCAST_OUTPUT_DIR=str(tmp_path / "output"),
+    )
+    assert result.returncode == 2
+    assert not result.stdout
+    assert "No local speech engine found" in result.stderr
+    assert "Traceback" not in result.stderr
