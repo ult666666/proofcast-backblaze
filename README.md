@@ -113,7 +113,7 @@ and `output/`, so local keys and media stay out of the image.
 
 - Verification shows that the files match the manifest, not who made them or that the recorded
   prompt produced them.
-- A signature shows which key signed, not who holds it. Keys are unencrypted on disk, with no
+- A signature shows which key signed, not who holds it, and keys sit unencrypted on disk with no
   rotation, revocation or timestamping.
 - The transparency log is one local file with no witnesses, so it cannot catch an operator who
   shows different histories to different people.
