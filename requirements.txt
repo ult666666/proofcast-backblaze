@@ -1,3 +1,4 @@
+cryptography==50.0.2
 genblaze-core==0.3.4
 genblaze-s3==0.3.4
 Pillow==13.0.0

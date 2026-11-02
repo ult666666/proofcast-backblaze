@@ -13,6 +13,8 @@ env
 .ruff_cache
 .mypy_cache
 output
+*.pem
+keys
 .git
 .github
 **/.DS_Store

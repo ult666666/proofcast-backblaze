@@ -6,7 +6,7 @@
 .venv/bin/python -m pytest
 ```
 
-The suite exercises local generation, saved-bundle integrity, real-file tampering, media metadata, malformed input and CLI isolation without contacting a provider.
+The suite exercises local generation, saved-bundle integrity, real-file tampering, media metadata, malformed input and CLI isolation without contacting a provider. It also checks Ed25519 signatures and the Merkle log against published test vectors (see `tests/vectors/transparency-dev-merkle/README.md`) and runs the tamper demo on a generated bundle.
 
 ## Local no-account smoke test
 
@@ -45,6 +45,32 @@ upload verification. Files must be unlinked regular files, at most 1 MiB for the
 32 MiB for each asset. Moved files are selected only in the manifest directory or an explicit
 `--asset-dir`; recorded absolute locations and HTTPS URLs are never followed.
 
+## Signed provenance and transparency log
+
+With a bundle from the smoke test:
+
+```bash
+.venv/bin/python examples/tamper_demo.py output/YOUR-RUN-ID-manifest.json
+```
+
+Expected: exit 0, `bundle_signed_and_logged` and `inclusion_and_consistency_verified` are `true`,
+and all seven `tamper_checks` report `"caught": true`. The demo works on copies in a temporary
+directory, so `output/` is unchanged afterwards. CI runs the same command on a bundle generated
+with eSpeak NG.
+
+To check by hand, follow [Sign and log a bundle](README.md#sign-and-log-a-bundle). Then confirm:
+
+- the private key file has mode `-rw-------` (`ls -l`) and is outside the repository;
+- `verify` exits 0 with `signature_verified` and `bundle.verified` both `true`;
+- `verify` with another key's `--public-key` exits 1 with `untrusted_key`;
+- appending one byte to a media copy makes `verify` exit 1 with `digest_mismatch`, while the
+  signature itself still verifies;
+- `log-verify` with `--inclusion` and with `--consistency` exits 0, and exits 1 after any proof
+  hash is edited.
+
+A passing signature shows which key signed the manifest, not who holds that key or when the media
+was made.
+
 ## Streamlit health check
 
 ```bash
@@ -59,10 +85,11 @@ Open `http://localhost:8501/_stcore/health`; expected body: `ok`.
 git status --short
 rg -n --hidden \
   -g '!/.venv/**' -g '!/output/**' -g '!.git/**' \
-  '(B2_APP_KEY=.+|B2_KEY_ID=.+|applicationKey|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' .
+  '(B2_APP_KEY=.+|B2_KEY_ID=.+|applicationKey|BEGIN (RSA |OPENSSH |EC |ENCRYPTED )?PRIVATE KEY)' .
 ```
 
-Review every match manually. `.env.example` must contain placeholders only.
+Review every match manually. `.env.example` must contain placeholders only. Ed25519 signing keys
+are PKCS #8 files that start with `BEGIN PRIVATE KEY`; none may appear in the repository.
 
 ## Live B2 smoke test
 
