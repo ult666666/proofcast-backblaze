@@ -55,6 +55,42 @@ def test_key_files_are_private_exclusive_and_fingerprinted(tmp_path, keys):
     assert not (tmp_path / "other.pub.pem").exists()
 
 
+def test_keygen_creates_missing_directories_like_the_readme_path(tmp_path):
+    # The README writes to ~/.config/proofcast/, which a first run does not have yet.
+    folder = tmp_path / "home" / ".config" / "proofcast"
+    fingerprint = signing.generate_keypair(folder / "signing-key.pem", folder / "signing-key.pub.pem")
+    assert signing.fingerprint(signing.load_private_key(folder / "signing-key.pem").public_key()) == fingerprint
+    assert signing.fingerprint(signing.load_public_key(folder / "signing-key.pub.pem")) == fingerprint
+    if os.name == "posix":
+        assert stat.S_IMODE(folder.stat().st_mode) == 0o700
+
+
+def test_keygen_never_leaves_a_private_key_without_its_public_key(tmp_path, monkeypatch):
+    # A rerun refuses to overwrite, so an orphaned private key could not be repaired.
+    real = signing._write_new
+
+    def public_write_fails(path, data, mode):
+        if path.name.endswith(".pub.pem"):
+            raise OSError("synthetic failure while writing the public key")
+        real(path, data, mode)
+
+    monkeypatch.setattr(signing, "_write_new", public_write_fails)
+    with pytest.raises(OSError, match="synthetic"):
+        signing.generate_keypair(tmp_path / "key.pem", tmp_path / "key.pub.pem")
+    assert not (tmp_path / "key.pem").exists()
+    monkeypatch.undo()
+    signing.generate_keypair(tmp_path / "key.pem", tmp_path / "key.pub.pem")  # The retry succeeds.
+
+
+def test_public_key_errors_name_the_real_problem(tmp_path, keys):
+    with pytest.raises(SigningError, match="key file not found"):
+        signing.load_public_key(tmp_path / "missing.pub.pem")
+    if os.name == "posix":
+        (tmp_path / "link.pub.pem").symlink_to(tmp_path / "key.pub.pem")
+        with pytest.raises(SigningError, match="regular file"):
+            signing.load_public_key(tmp_path / "link.pub.pem")
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission bits")
 def test_private_key_readable_by_others_or_linked_is_refused(tmp_path, keys):
     (tmp_path / "key.pem").chmod(0o640)
