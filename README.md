@@ -136,7 +136,8 @@ a manifest's hash is in the log and a signed tree head covers it, the log cannot
 change that entry without the change being detectable.
 
 Create a key pair once, outside the repository. The private key file is created with mode 0600
-and is never overwritten; `.gitignore` also excludes `*.pem` and `keys/`.
+and is never overwritten; `.gitignore` also excludes `*.pem` and `keys/`. A missing directory, such
+as `~/.config/proofcast/` on a first run, is created with mode 0700.
 
 ```bash
 .venv/bin/python -m proofcast.provenance keygen \
@@ -202,7 +203,8 @@ Try every tamper case on copies of a bundle (the originals are not changed):
 It signs and logs the bundle, verifies inclusion and consistency, then checks that a changed
 media byte (`digest_mismatch`), a changed manifest byte (`bad_signature`), a different trusted
 key (`untrusted_key`), a flipped proof bit, an edited tree head, and a rewritten log entry
-followed by a newly signed head (`consistency_proof_failed`) are all caught.
+followed by a newly signed head (`consistency_proof_failed`, and `log_differs_from_tree_head`
+when an auditor recomputes the root from the log) are all caught.
 
 What a signature does and does not prove:
 

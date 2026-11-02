@@ -66,17 +66,25 @@ def generate_keypair(private_path: Path, public_path: Path) -> str:
     """Write a new key pair; never overwrite. Returns the public key fingerprint.
 
     The private key is unencrypted PKCS #8 PEM with mode 0600; the public key is
-    SubjectPublicKeyInfo PEM with mode 0644.
+    SubjectPublicKeyInfo PEM with mode 0644. A missing parent directory is
+    created with mode 0700. If the public key cannot be written, the new private
+    key is removed again: a rerun refuses to overwrite, so half a pair would stay.
     """
     private_path, public_path = Path(private_path), Path(public_path)
     for path in (private_path, public_path):
         if os.path.lexists(path):
             raise SigningError(f"refusing to overwrite existing file: {path}")
+    for path in (private_path, public_path):
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     key = Ed25519PrivateKey.generate()
     _write_new(private_path, key.private_bytes(
         serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()), 0o600)
-    _write_new(public_path, key.public_key().public_bytes(
-        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo), 0o644)
+    try:
+        _write_new(public_path, key.public_key().public_bytes(
+            serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo), 0o644)
+    except BaseException:
+        private_path.unlink()  # Created exclusively by this call, so it is ours to remove.
+        raise
     return fingerprint(key.public_key())
 
 
@@ -106,8 +114,9 @@ def load_private_key(path: Path) -> Ed25519PrivateKey:
 
 
 def load_public_key(path: Path) -> Ed25519PublicKey:
+    data = _read_key_file(path)  # Outside the try: its SigningError is a ValueError too.
     try:
-        key = serialization.load_pem_public_key(_read_key_file(path))
+        key = serialization.load_pem_public_key(data)
     except (ValueError, UnsupportedAlgorithm):
         raise SigningError("not a PEM public key") from None
     if not isinstance(key, Ed25519PublicKey):
