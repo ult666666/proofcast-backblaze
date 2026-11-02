@@ -27,6 +27,8 @@ from PIL import Image, UnidentifiedImageError
 
 MAX_MANIFEST_BYTES = 1024 * 1024
 MAX_ASSET_BYTES = 32 * 1024 * 1024
+# Cover generators whose bundles verify; v1 bundles predate the plainer v2 design.
+COVER_MODELS = ("proofcast-accessible-cover-v1", "proofcast-accessible-cover-v2")
 SCOPE = (
     "Checks the supplied manifest's integrity and the two local media files' "
     "SHA-256, size and format metadata. No URL is fetched. Does not authenticate "
@@ -263,7 +265,7 @@ def _contract_ok(manifest: Manifest) -> bool:
             return False
         if role == "image":
             if (
-                step.model != "proofcast-accessible-cover-v1"
+                step.model not in COVER_MODELS
                 or asset.metadata.get("generator") != step.model
             ):
                 return False

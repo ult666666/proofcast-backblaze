@@ -165,7 +165,7 @@ class AccessibleCoverProvider(SyncProvider):
     """Generate a high-contrast editorial cover from the same prompt."""
 
     name = "proofcast-accessible-cover"
-    model_name = "proofcast-accessible-cover-v1"
+    model_name = "proofcast-accessible-cover-v2"
 
     def __init__(self, output_dir: Path) -> None:
         super().__init__(retry_policy=RetryPolicy.disabled())
@@ -235,24 +235,16 @@ class AccessibleCoverProvider(SyncProvider):
             bottom = center + magnitude / 2
             draw.rounded_rectangle((x, top, x + 18, bottom), radius=9, fill=accent)
 
-        draw.rounded_rectangle((64, 54, 292, 104), radius=25, fill="#f7f9fc")
-        draw.text((88, 66), "PROOFCAST", fill="#08111f", font=self._font(22, bold=True))
-
+        # v2 keeps the title, the waveform and a quiet wordmark. v1 also drew a
+        # "PROOFCAST" pill, an uppercase tagline and a play button that did nothing.
         wrapped = textwrap.wrap(title, width=28)[:3]
-        y = 145
+        y = 72
         title_font = self._font(66, bold=True)
         for line in wrapped:
             draw.text((64, y), line, fill="#ffffff", font=title_font)
             y += 79
 
-        draw.text(
-            (64, 626),
-            "LOCAL NARRATION  /  HASH-VERIFIED PROVENANCE",
-            fill="#dce7f7",
-            font=self._font(22, bold=True),
-        )
-        draw.ellipse((1110, 74, 1206, 170), fill=accent)
-        draw.polygon(((1140, 102), (1140, 142), (1176, 122)), fill="#08111f")
+        draw.text((64, 636), "ProofCast", fill="#dce7f7", font=self._font(26))
         return image
 
     @staticmethod

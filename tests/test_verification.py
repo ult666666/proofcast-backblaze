@@ -233,6 +233,7 @@ def test_rehashed_non_media_bytes_are_rejected(local_bundle):
     [
         (0, "model", "unrelated-speech-model"),
         (1, "model", "unrelated-image-model"),
+        (1, "model", "proofcast-accessible-cover-v3"),
     ],
 )
 def test_rehashed_provider_model_inconsistency_is_rejected(
@@ -247,6 +248,21 @@ def test_rehashed_provider_model_inconsistency_is_rejected(
     assert report.manifest_verified
     assert not report.verified
     assert "bundle_contract_mismatch" in report.issues
+
+
+def test_new_bundles_use_the_v2_cover_and_v1_bundles_still_verify(local_bundle):
+    data = json.loads(local_bundle.manifest_path.read_text())
+    cover_step = data["run"]["steps"][1]
+    assert cover_step["model"] == "proofcast-accessible-cover-v2"
+
+    def label_as_v1(d):
+        step = d["run"]["steps"][1]
+        step["model"] = "proofcast-accessible-cover-v1"
+        step["assets"][0]["metadata"]["generator"] = "proofcast-accessible-cover-v1"
+
+    rewrite(local_bundle, label_as_v1, rehash=True)
+    report = inspect(local_bundle.manifest_path)
+    assert report.verified, report.issues
 
 
 def test_crc_valid_png_with_broken_compressed_pixels_is_rejected(local_bundle):
