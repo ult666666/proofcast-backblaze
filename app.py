@@ -14,7 +14,8 @@ st.set_page_config(page_title="ProofCast", page_icon="◉", layout="wide")
 
 st.title("ProofCast")
 st.caption(
-    "Turn a short lesson into local AI narration with verifiable media provenance."
+    "Turn a short lesson into a narrated WAV file and a cover image, "
+    "with a manifest that records how both were made."
 )
 
 settings = Settings.from_env()
@@ -24,19 +25,15 @@ except ValueError as exc:
     st.error(f"Configuration error: {exc}")
     st.stop()
 
-storage_label = (
-    "Backblaze B2 enabled"
-    if settings.b2_enabled
-    else "Local demo mode — no cloud writes"
-)
-st.info(storage_label)
+if settings.b2_enabled:
+    st.info("Backblaze B2 is on: each run uploads the narration, the cover and the manifest.")
+else:
+    st.caption("Local mode: files are saved on this computer and nothing is uploaded.")
 
 with st.form("generation"):
-    title = st.text_input(
-        "Brief title", value="Three ways to spot a phishing message", max_chars=90
-    )
+    title = st.text_input("Title", value="Three ways to spot a phishing message", max_chars=90)
     script = st.text_area(
-        "Narration script",
+        "Script",
         value=(
             "Pause before opening unexpected links. Check the sender address, not only the display "
             "name. When a message creates urgency, verify the request through a second channel."
@@ -46,22 +43,24 @@ with st.form("generation"):
     )
     left, right = st.columns(2)
     with left:
-        voice = st.text_input("Local voice", value="Samantha")
+        voice = st.text_input(
+            "Voice",
+            value="Samantha",
+            help="An Apple Speech voice on macOS. eSpeak NG on Linux always uses en-us.",
+        )
     with right:
-        rate = st.slider("Speaking rate", 120, 240, 175)
+        rate = st.slider("Speaking rate (words per minute)", 120, 240, 175)
     consent = st.checkbox(
-        "This script is non-sensitive and I understand its prompt appears in the provenance manifest."
+        "The script contains nothing sensitive, and I understand it is stored in the manifest."
     )
-    submitted = st.form_submit_button("Generate proof-backed brief", type="primary")
+    submitted = st.form_submit_button("Generate", type="primary")
 
 if submitted:
     if not consent:
-        st.warning("Confirm the non-sensitive content notice before generating.")
+        st.warning("Confirm that the script contains nothing sensitive before generating.")
         st.stop()
     try:
-        with st.spinner(
-            "Generating two local media assets and checking the manifest and local media bytes..."
-        ):
+        with st.spinner("Generating the narration and the cover, then checking both files..."):
             generated = generate_bundle(
                 GenerationRequest(title=title, script=script, voice=voice, rate=rate),
                 settings,
@@ -71,14 +70,16 @@ if submitted:
         st.stop()
 
     if generated.verified:
-        st.success("Manifest integrity and both local media files verified.")
+        st.success("Verified: the manifest is intact and both files match it.")
     else:
-        st.error(
-            "Local bundle verification failed. Inspect the verification report before using it."
-        )
-    st.caption(generated.verification.to_dict()["scope"])
-    with st.expander("Local verification report"):
+        st.error("Verification failed. Read the report below before using these files.")
+    st.caption(
+        "This shows the files match the manifest. "
+        "It does not show who made them or that the recorded prompt produced them."
+    )
+    with st.expander("Verification report"):
         st.json(generated.verification.to_dict())
+    st.caption("Manifest hash (SHA-256)")
     st.code(generated.canonical_hash, language=None)
     media_columns = st.columns(2)
     for asset in generated.assets:
@@ -88,28 +89,26 @@ if submitted:
             source = local_path.read_bytes()
         else:
             source = asset.url
+        location = local_path.name if local_path else asset.url
         if asset.media_type.startswith("audio/"):
             with media_columns[0]:
                 st.subheader("Narration")
                 st.audio(source, format=asset.media_type)
-                st.caption(asset.url)
+                st.caption(location)
         elif asset.media_type.startswith("image/"):
             with media_columns[1]:
-                st.subheader("Accessible cover")
+                st.subheader("Cover")
                 st.image(source, width="stretch")
-                st.caption(asset.url)
+                st.caption(location)
 
-    with st.expander("Providers, models, and manifest"):
+    with st.expander("Providers and manifest"):
         st.write(list(generated.providers_and_models))
         st.download_button(
-            "Download canonical manifest",
+            "Download manifest",
             data=Path(generated.manifest_path).read_bytes(),
             file_name=generated.manifest_path.name,
             mime="application/json",
         )
 
 st.divider()
-st.caption(
-    "Zero-provider-cost design: Apple Speech or eSpeak NG runs locally; cloud writes stay off unless "
-    "B2_ENABLED=1 is explicitly configured. Script length is capped to control storage and runtime."
-)
+st.caption("ProofCast · [Source](https://github.com/ult666666/proofcast-backblaze) · MIT license")

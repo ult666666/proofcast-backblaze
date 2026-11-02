@@ -37,7 +37,7 @@ Use the generated manifest path from the smoke-test JSON:
 Expected: exit 0 and separate passing manifest/local asset checks. This command never invokes
 speech generation, reads cloud settings or fetches URLs. A copy with a changed media byte must
 exit 1 with `digest_mismatch`; a missing file must exit 1 with `missing_file`. The runnable
-copy-and-tamper scenario in [README.md](README.md#verify-a-saved-local-bundle) preserves the originals.
+copy-and-tamper scenario in [docs/PROVENANCE.md](docs/PROVENANCE.md#verify-a-saved-bundle) preserves the originals.
 
 Checks cover canonical integrity, the ProofCast two-step contract, file SHA-256/size and real
 PNG/WAV metadata, including full decoding of the supported single-frame PNG cover. Passing is internal consistency, not authenticated provenance or remote
@@ -58,7 +58,7 @@ and all seven `tamper_checks` report `"caught": true`. The demo works on copies 
 directory, so `output/` is unchanged afterwards. CI runs the same command on a bundle generated
 with eSpeak NG.
 
-To check by hand, follow [Sign and log a bundle](README.md#sign-and-log-a-bundle). Then confirm:
+To check by hand, follow [Sign a bundle](docs/PROVENANCE.md#sign-a-bundle) and [Add a bundle to the transparency log](docs/PROVENANCE.md#add-a-bundle-to-the-transparency-log). Then confirm:
 
 - the private key file has mode `-rw-------` (`ls -l`) and is outside the repository;
 - `verify` exits 0 with `signature_verified` and `bundle.verified` both `true`;
