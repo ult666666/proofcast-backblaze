@@ -53,7 +53,9 @@ keeps that record with the files.
 |---|---|---|---:|
 | Narration on macOS | `proofcast-local-speech` | Apple Speech voice selected by the user | $0 |
 | Narration on Linux or a server | `proofcast-local-speech` | `espeak-ng-en-us` | $0 |
-| Cover | `proofcast-accessible-cover` | `proofcast-accessible-cover-v1` | $0 |
+| Cover | `proofcast-accessible-cover` | `proofcast-accessible-cover-v2` | $0 |
+
+Bundles made with the earlier `proofcast-accessible-cover-v1` still verify.
 
 Any Genblaze speech or image connector could replace these providers without changing the
 storage and provenance layer. The app caps scripts at 1,200 characters, turns off provider
