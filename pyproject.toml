@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "proofcast"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local generative-audio accessibility pipeline with Genblaze provenance and Backblaze B2 storage"
 requires-python = ">=3.11"
 dependencies = [
+  "cryptography==50.0.2",
   "genblaze-core==0.3.4",
   "genblaze-s3==0.3.4",
   "Pillow==13.0.0",
@@ -15,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 proofcast = "proofcast.cli:main"
+proofcast-provenance = "proofcast.provenance:main"
 
 [tool.setuptools.packages.find]
 include = ["proofcast*"]

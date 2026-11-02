@@ -26,4 +26,14 @@ jobs:
       - name: Verify local generation and saved-bundle contracts
         run: python -m pytest
       - name: Compile application source
-        run: python -m py_compile app.py proofcast/*.py
+        run: python -m py_compile app.py proofcast/*.py examples/*.py
+      - name: Install eSpeak NG for a real local generation
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends espeak-ng
+      - name: Generate a real bundle, then sign, log and tamper with copies of it
+        env:
+          PROOFCAST_OUTPUT_DIR: ${{ runner.temp }}/proofcast-output
+        run: |
+          python -m proofcast.cli --engine espeak-ng --title "Check before clicking" \
+            --script "Verify unexpected requests through a second channel." > "$RUNNER_TEMP/run.json"
+          manifest=$(python -c 'import json, sys; print(json.load(open(sys.argv[1]))["manifest_path"])' "$RUNNER_TEMP/run.json")
+          python examples/tamper_demo.py "$manifest"

@@ -7,6 +7,10 @@ __pycache__/
 *.pyc
 output/
 
+# Signing keys never belong in the repository.
+*.pem
+keys/
+
 
 # Local agent planning notes (not part of the project docs)
 docs/superpowers/
