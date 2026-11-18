@@ -49,7 +49,8 @@ def main() -> int:
         checks.append({"tamper": name, "caught": found, "issue": issue})
 
     with tempfile.TemporaryDirectory(prefix="proofcast-tamper-demo-") as temporary:
-        work = Path(temporary)
+        # System temp paths can contain symlinks, such as /var on macOS.
+        work = Path(temporary).resolve(strict=True)
         bundle, keys, log = work / "bundle", work / "keys", work / "log"
         bundle.mkdir()
         keys.mkdir(mode=0o700)

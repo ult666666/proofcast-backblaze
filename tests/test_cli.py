@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -112,3 +113,23 @@ def test_missing_speech_engine_exits_2_without_traceback(tmp_path):
     assert not result.stdout
     assert "No local speech engine found" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_tamper_demo_uses_a_real_path_for_its_own_copies(local_bundle, tmp_path):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    alias = tmp_path / "temp-alias"
+    alias.symlink_to(scratch, target_is_directory=True)
+    script = Path(__file__).resolve().parents[1] / "examples" / "tamper_demo.py"
+    result = subprocess.run(
+        [sys.executable, str(script), str(local_bundle.manifest_path)],
+        env={**os.environ, "TMPDIR": str(alias), "TEMP": str(alias), "TMP": str(alias)},
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report["inclusion_and_consistency_verified"]
+    assert len(report["tamper_checks"]) == 7
+    assert all(check["caught"] for check in report["tamper_checks"])
